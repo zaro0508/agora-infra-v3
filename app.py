@@ -62,7 +62,7 @@ ecs_stack = EcsStack(
     scope=cdk_app,
     construct_id=f"{stack_name_prefix}-ecs",
     vpc=network_stack.vpc,
-    namespace=environment_variables["FQDN"],
+    namespace=fully_qualified_domain_name,
 )
 
 # From AWS docs https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-connect-concepts-deploy.html

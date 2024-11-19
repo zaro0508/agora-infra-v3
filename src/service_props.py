@@ -35,8 +35,13 @@ class ContainerVolume:
     """
 
     path: str
+    """The path on the container to mount the host volume at."""
+
     size: int = 15
+    """The size of the volume in GiB."""
+
     read_only: bool = False
+    """Container has read-only access to the volume, set to `false` for write access."""
 
 
 class ServiceProps:
