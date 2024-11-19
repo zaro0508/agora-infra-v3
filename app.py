@@ -144,7 +144,7 @@ mongo_stack = ServiceStack(
 
 api_props = ServiceProps(
     container_name="agora-api",
-    container_location=f"ghcr.io/sage-bionetworks/agora-data:{agora_version}",
+    container_location=f"ghcr.io/sage-bionetworks/agora-api:{agora_version}",
     container_port=3333,
     container_memory=1024,
     container_env_vars={
