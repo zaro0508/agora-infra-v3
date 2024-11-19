@@ -40,6 +40,7 @@ match environment:
         )
 
 stack_name_prefix = f"agora-{environment}"
+fully_qualified_domain_name = environment_variables["FQDN"]
 environment_tags = environment_variables["TAGS"]
 agora_version = "0.0.2"
 
@@ -79,6 +80,7 @@ api_docs_props = ServiceProps(
     container_location=f"ghcr.io/sage-bionetworks/agora-api-docs:{agora_version}",
     container_port=8010,
     container_memory=200,
+    container_env_vars={"PORT": "8010"},
 )
 api_docs_stack = ServiceStack(
     scope=cdk_app,
@@ -117,7 +119,7 @@ mongo_stack = ServiceStack(
 # data_props = ServiceProps(
 #     container_name="agora-data",
 #     container_location=f"ghcr.io/sage-bionetworks/agora-data:{agora_version}",
-#     container_port=9999,       # Not used
+#     container_port=9999,  # Not used
 #     container_memory=2048,
 # )
 # data_stack = ServiceStack(
@@ -126,6 +128,17 @@ mongo_stack = ServiceStack(
 #     vpc=network_stack.vpc,
 #     cluster=ecs_stack.cluster,
 #     props=data_props,
+#     container_env_vars={
+#         "DB_USER": "root",
+#         "DB_PASS": "changeme",
+#         "DB_NAME": "agora",
+#         "DB_PORT": "27017",
+#         "DB_HOST": "agora-mongo",
+#         "DATA_FILE": "syn13363290",
+#         "DATA_VERSION": "68",
+#         "TEAM_IMAGES_ID": "syn12861877",
+#         "SYNAPSE_AUTH_TOKEN": "agora-service-user-pat-here",
+#     },
 # )
 # data_stack.add_dependency(mongo_stack)
 
@@ -134,6 +147,10 @@ api_props = ServiceProps(
     container_location=f"ghcr.io/sage-bionetworks/agora-data:{agora_version}",
     container_port=3333,
     container_memory=1024,
+    container_env_vars={
+        "MONGODB_URI": "mongodb://root:changeme@agora-mongo:27017/agora?authSource=admin",
+        "NODE_ENV": "development",
+    },
 )
 api_stack = ServiceStack(
     scope=cdk_app,
@@ -149,6 +166,12 @@ app_props = ServiceProps(
     container_location=f"ghcr.io/sage-bionetworks/agora-app:{agora_version}",
     container_port=4200,
     container_memory=200,
+    container_env_vars={
+        "API_DOCS_URL": f"http://{fully_qualified_domain_name}/api-docs",
+        "APP_VERSION": f"{agora_version}",
+        "CSR_API_URL": f"http://{fully_qualified_domain_name}/api/v1",
+        "SSR_API_URL": "http://agora-api:3333/v1",
+    },
 )
 app_stack = ServiceStack(
     scope=cdk_app,
@@ -164,6 +187,14 @@ apex_props = ServiceProps(
     container_location=f"ghcr.io/sage-bionetworks/agora-apex:{agora_version}",
     container_port=80,
     container_memory=200,
+    container_env_vars={
+        "API_DOCS_HOST": "agora-api-docs",
+        "API_DOCS_PORT": "8010",
+        "API_HOST": "agora-api",
+        "API_PORT": "3333",
+        "APP_HOST": "agora-app",
+        "APP_PORT": "4200",
+    },
 )
 apex_stack = LoadBalancedServiceStack(
     scope=cdk_app,
