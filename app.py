@@ -42,7 +42,7 @@ match environment:
 stack_name_prefix = f"agora-{environment}"
 fully_qualified_domain_name = environment_variables["FQDN"]
 environment_tags = environment_variables["TAGS"]
-agora_version = "0.0.2"
+agora_version = "edge"
 
 # Define stacks
 cdk_app = cdk.App()
