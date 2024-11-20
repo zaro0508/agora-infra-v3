@@ -1,0 +1,18 @@
+name: deploy-dev
+
+on:
+  workflow_run:
+    workflows:
+      - check
+    types:
+      - completed
+    branches:
+      - dev
+
+jobs:
+  aws-deploy:
+    uses: "./.github/workflows/aws-deploy.yaml"
+    with:
+      role-to-assume: "arn:aws:iam::631692904429:role/sagebase-github-oidc-sage-bionetworks-it-schematic-infra-v2"
+      role-session-name: ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.run_id }}
+      environment: dev
