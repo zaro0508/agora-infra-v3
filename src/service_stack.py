@@ -133,12 +133,12 @@ class ServiceStack(cdk.Stack):
             capacity_provider_strategies=[
                 ecs.CapacityProviderStrategy(
                     capacity_provider="FARGATE",
-                    base=1,       # At least 1 task will be run by FARGATE
+                    base=1,  # At least 1 task will be run by FARGATE
                 ),
                 ecs.CapacityProviderStrategy(
                     capacity_provider="FARGATE_SPOT",
-                    weight=1,     # The remain task will be run by FARGATE_SPOT
-                )
+                    weight=1,  # The remain task will be run by FARGATE_SPOT
+                ),
             ],
         )
 
