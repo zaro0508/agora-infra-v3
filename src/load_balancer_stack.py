@@ -23,21 +23,20 @@ class LoadBalancerStack(cdk.Stack):
             self, "AppLoadBalancer", vpc=vpc, internet_facing=True
         )
 
-        # WAF to protect against common web attacks (OWASP Top 10)
+        # WAF to protect against common web attacks
         web_acl = wafv2.CfnWebACL(
             self,
             "WebAcl",
-            name="AppWebAcl",
-            default_action=wafv2.CfnWebACL.DefaultActionProperty(
-                allow=wafv2.CfnWebACL.AllowActionProperty()
-            ),
             scope="REGIONAL",
+            default_action=wafv2.CfnWebACL.DefaultActionProperty(allow={}),
             visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
                 cloud_watch_metrics_enabled=True,
-                metric_name="AWSManagedRulesCommonRuleSet",
+                metric_name="WebAclMetrics",
                 sampled_requests_enabled=True,
             ),
             rules=[
+                # Rules that provide protection against exploitation of a wide range of vulnerabilities,
+                # including those described in OWASP top 10 publications
                 wafv2.CfnWebACL.RuleProperty(
                     name="AWSManagedRulesCommonRuleSet",
                     priority=0,
@@ -45,23 +44,39 @@ class LoadBalancerStack(cdk.Stack):
                         managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
                             name="AWSManagedRulesCommonRuleSet",
                             vendor_name="AWS",
-                            excluded_rules=[],
                         )
                     ),
-                    action=wafv2.CfnWebACL.RuleActionProperty(block={}),
+                    override_action=wafv2.CfnWebACL.OverrideActionProperty(none={}),
                     visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
                         cloud_watch_metrics_enabled=True,
                         metric_name="AWSManagedRulesCommonRuleSet",
                         sampled_requests_enabled=True,
                     ),
+                ),
+                # Rules to block request patterns that are known to be invalid and are associated with
+                # exploitation or discovery of vulnerabilities.
+                wafv2.CfnWebACL.RuleProperty(
+                    name="AWSManagedRulesKnownBadInputsRuleSet",
+                    priority=1,
+                    statement=wafv2.CfnWebACL.StatementProperty(
+                        managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
+                            vendor_name="AWS",
+                            name="AWSManagedRulesKnownBadInputsRuleSet",
+                        )
+                    ),
                     override_action=wafv2.CfnWebACL.OverrideActionProperty(none={}),
-                )
+                    visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
+                        sampled_requests_enabled=True,
+                        cloud_watch_metrics_enabled=True,
+                        metric_name="AWSManagedRulesKnownBadInputsRuleSet",
+                    ),
+                ),
             ],
         )
 
         wafv2.CfnWebACLAssociation(
             self,
-            "web_acl_association",
+            "WeAclAssociation",
             resource_arn=self.alb.load_balancer_arn,
             web_acl_arn=web_acl.attr_arn,
         )
