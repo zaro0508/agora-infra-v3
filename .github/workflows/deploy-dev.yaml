@@ -6,7 +6,7 @@ on:
 
 jobs:
   test:
-    uses: test.yml
+    uses: ./.github/workflows/test.yaml
     with:
       environment: dev
   aws-deploy:
