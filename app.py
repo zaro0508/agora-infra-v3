@@ -5,7 +5,7 @@ import aws_cdk as cdk
 from src.ecs_stack import EcsStack
 from src.load_balancer_stack import LoadBalancerStack
 from src.network_stack import NetworkStack
-from src.service_props import ServiceProps, ContainerVolume, ServiceSecret
+from src.service_props import ServiceProps, ServiceSecret
 from src.service_stack import LoadBalancedServiceStack, ServiceStack
 
 # get the environment and set environment specific variables
@@ -81,9 +81,9 @@ api_props = ServiceProps(
     container_port=3333,
     container_memory=1024,
     container_env_vars={
-        "NODE_ENV": "development"
+        "NODE_ENV": "development",
         "MONGODB_PORT": "27017",
-        "MONGODB_NAME": "agora"
+        "MONGODB_NAME": "agora",
     },
     container_secrets=[
         ServiceSecret(
@@ -98,7 +98,7 @@ api_props = ServiceProps(
             secret_name=f"{stack_name_prefix}/MongodbHost",
             environment_key="MONGODB_HOST",
         ),
-    ]
+    ],
 )
 api_stack = ServiceStack(
     scope=cdk_app,
@@ -118,8 +118,8 @@ app_props = ServiceProps(
         "APP_VERSION": f"{agora_version}",
         "CSR_API_URL": f"http://{fully_qualified_domain_name}/api/v1",
         "SSR_API_URL": "http://agora-api:3333/v1",
-        "ROLLBAR_TOKEN"="e788198867474855a996485580b08d03"
-        "TAG_NAME"=f"agora/v${agora_version}"
+        "ROLLBAR_TOKEN": "e788198867474855a996485580b08d03",
+        "TAG_NAME": f"agora/v${agora_version}",
     },
 )
 app_stack = ServiceStack(
