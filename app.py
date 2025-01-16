@@ -75,73 +75,6 @@ load_balancer_stack = LoadBalancerStack(
     vpc=network_stack.vpc,
 )
 
-api_docs_props = ServiceProps(
-    container_name="agora-api-docs",
-    container_location=f"ghcr.io/sage-bionetworks/agora-api-docs:{agora_version}",
-    container_port=8010,
-    container_memory=200,
-    container_env_vars={"PORT": "8010"},
-)
-api_docs_stack = ServiceStack(
-    scope=cdk_app,
-    construct_id=f"{stack_name_prefix}-api-docs",
-    vpc=network_stack.vpc,
-    cluster=ecs_stack.cluster,
-    props=api_docs_props,
-)
-
-mongo_props = ServiceProps(
-    container_name="agora-mongo",
-    container_location=f"ghcr.io/sage-bionetworks/agora-mongo:{agora_version}",
-    container_port=27017,
-    container_memory=500,
-    container_env_vars={
-        "MONGO_INITDB_ROOT_USERNAME": "root",
-        "MONGO_INITDB_ROOT_PASSWORD": "changeme",
-        "MONGO_INITDB_DATABASE": "agora",
-    },
-    container_volumes=[
-        ContainerVolume(
-            path="/data/db",
-            size=30,
-        )
-    ],
-)
-mongo_stack = ServiceStack(
-    scope=cdk_app,
-    construct_id=f"{stack_name_prefix}-mongo",
-    vpc=network_stack.vpc,
-    cluster=ecs_stack.cluster,
-    props=mongo_props,
-)
-
-# It is probably not appropriate host this container in ECS
-# data_props = ServiceProps(
-#     container_name="agora-data",
-#     container_location=f"ghcr.io/sage-bionetworks/agora-data:{agora_version}",
-#     container_port=9999,  # Not used
-#     container_memory=2048,
-# )
-# data_stack = ServiceStack(
-#     scope=cdk_app,
-#     construct_id=f"{stack_name_prefix}-data",
-#     vpc=network_stack.vpc,
-#     cluster=ecs_stack.cluster,
-#     props=data_props,
-#     container_env_vars={
-#         "DB_USER": "root",
-#         "DB_PASS": "changeme",
-#         "DB_NAME": "agora",
-#         "DB_PORT": "27017",
-#         "DB_HOST": "agora-mongo",
-#         "DATA_FILE": "syn13363290",
-#         "DATA_VERSION": "68",
-#         "TEAM_IMAGES_ID": "syn12861877",
-#         "SYNAPSE_AUTH_TOKEN": "agora-service-user-pat-here",
-#     },
-# )
-# data_stack.add_dependency(mongo_stack)
-
 api_props = ServiceProps(
     container_name="agora-api",
     container_location=f"ghcr.io/sage-bionetworks/agora-api:{agora_version}",
@@ -174,7 +107,6 @@ api_stack = ServiceStack(
     cluster=ecs_stack.cluster,
     props=api_props,
 )
-api_stack.add_dependency(mongo_stack)
 
 app_props = ServiceProps(
     container_name="agora-app",
@@ -222,7 +154,6 @@ apex_stack = LoadBalancedServiceStack(
     health_check_path="/health",
 )
 apex_stack.add_dependency(app_stack)
-apex_stack.add_dependency(api_docs_stack)
 apex_stack.add_dependency(api_stack)
 
 cdk_app.synth()
