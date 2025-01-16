@@ -118,6 +118,8 @@ app_props = ServiceProps(
         "APP_VERSION": f"{agora_version}",
         "CSR_API_URL": f"http://{fully_qualified_domain_name}/api/v1",
         "SSR_API_URL": "http://agora-api:3333/v1",
+        "ROLLBAR_TOKEN"="e788198867474855a996485580b08d03"
+        "TAG_NAME"=f"agora/v${agora_version}"
     },
 )
 app_stack = ServiceStack(
