@@ -17,21 +17,21 @@ match environment:
             "VPC_CIDR": "10.254.174.0/24",
             "FQDN": "prod.agora.io",
             "CERTIFICATE_ARN": "arn:aws:acm:us-east-1:681175625864:certificate/69b3ba97-b382-4648-8f94-a250b77b4994",
-            "TAGS": {"CostCenter": "NO PROGRAM / 000000"},
+            "TAGS": {"CostCenter": "Agora / 112300"},
         }
     case "stage":
         environment_variables = {
             "VPC_CIDR": "10.254.173.0/24",
             "FQDN": "stage.agora.io",
             "CERTIFICATE_ARN": "arn:aws:acm:us-east-1:681175625864:certificate/69b3ba97-b382-4648-8f94-a250b77b4994",
-            "TAGS": {"CostCenter": "NO PROGRAM / 000000"},
+            "TAGS": {"CostCenter": "Agora / 112300"},
         }
     case "dev":
         environment_variables = {
             "VPC_CIDR": "10.254.172.0/24",
             "FQDN": "dev.agora.io",
             "CERTIFICATE_ARN": "arn:aws:acm:us-east-1:607346494281:certificate/e8093404-7db1-4042-90d0-01eb5bde1ffc",
-            "TAGS": {"CostCenter": "NO PROGRAM / 000000"},
+            "TAGS": {"CostCenter": "Agora / 112300"},
         }
     case _:
         valid_envs_str = ",".join(VALID_ENVIRONMENTS)
