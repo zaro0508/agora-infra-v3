@@ -1,12 +1,15 @@
 from os import environ
 
 import aws_cdk as cdk
+from aws_cdk import aws_ec2 as ec2
 
 from src.ecs_stack import EcsStack
 from src.load_balancer_stack import LoadBalancerStack
 from src.network_stack import NetworkStack
 from src.service_props import ServiceProps, ServiceSecret
 from src.service_stack import LoadBalancedServiceStack, ServiceStack
+from src.docdb_props import DocdbProps
+from src.docdb_stack import DocdbStack
 
 # get the environment and set environment specific variables
 VALID_ENVIRONMENTS = ["dev", "stage", "prod"]
@@ -43,6 +46,7 @@ stack_name_prefix = f"agora-{environment}"
 fully_qualified_domain_name = environment_variables["FQDN"]
 environment_tags = environment_variables["TAGS"]
 agora_version = "4.0.0-rc1"
+docdb_master_username = "master"
 
 # Define stacks
 cdk_app = cdk.App()
@@ -56,6 +60,19 @@ network_stack = NetworkStack(
     scope=cdk_app,
     construct_id=f"{stack_name_prefix}-network",
     vpc_cidr=environment_variables["VPC_CIDR"],
+)
+
+docdb_props = DocdbProps(
+    instance_type=ec2.InstanceType.of(
+        ec2.InstanceClass.MEMORY5, ec2.InstanceSize.LARGE
+    ),
+    master_username=docdb_master_username,
+)
+docdb_stack = DocdbStack(
+    scope=cdk_app,
+    construct_id=f"{stack_name_prefix}-docdb",
+    vpc=network_stack.vpc,
+    props=docdb_props,
 )
 
 ecs_stack = EcsStack(
@@ -84,21 +101,16 @@ api_props = ServiceProps(
         "NODE_ENV": "development",
         "MONGODB_PORT": "27017",
         "MONGODB_NAME": "agora",
+        "MONDODB_USER": docdb_master_username,
+        "MONGODB_HOST": docdb_stack.cluster.cluster_endpoint.hostname,
     },
     container_secrets=[
         ServiceSecret(
-            secret_name=f"{stack_name_prefix}/MongodbUsername",
-            environment_key="MONGODB_USER",
-        ),
-        ServiceSecret(
-            secret_name=f"{stack_name_prefix}/MongodbPassword",
+            secret_name=docdb_stack.master_password_secret.secret_name,
             environment_key="MONGODB_PASS",
-        ),
-        ServiceSecret(
-            secret_name=f"{stack_name_prefix}/MongodbHost",
-            environment_key="MONGODB_HOST",
-        ),
+        )
     ],
+    container_security_groups=[docdb_stack.access_docdb_security_group],
 )
 api_stack = ServiceStack(
     scope=cdk_app,
@@ -107,6 +119,7 @@ api_stack = ServiceStack(
     cluster=ecs_stack.cluster,
     props=api_props,
 )
+api_stack.add_dependency(docdb_stack)
 
 app_props = ServiceProps(
     container_name="agora-app",
@@ -118,7 +131,6 @@ app_props = ServiceProps(
         "APP_VERSION": f"{agora_version}",
         "CSR_API_URL": f"http://{fully_qualified_domain_name}/api/v1",
         "SSR_API_URL": "http://agora-api:3333/v1",
-        "ROLLBAR_TOKEN": "e788198867474855a996485580b08d03",
         "TAG_NAME": f"agora/v${agora_version}",
     },
 )

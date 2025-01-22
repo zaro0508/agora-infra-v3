@@ -132,6 +132,8 @@ class ServiceStack(cdk.Stack):
             peer=ec2.Peer.ipv4("0.0.0.0/0"),
             connection=ec2.Port.tcp(props.container_port),
         )
+        self.security_groups = props.container_security_groups.copy()
+        self.security_groups.append(self.security_group)
 
         # attach ECS task to ECS cluster
         self.service = ecs.FargateService(
@@ -141,7 +143,7 @@ class ServiceStack(cdk.Stack):
             task_definition=self.task_definition,
             enable_execute_command=True,
             circuit_breaker=ecs.DeploymentCircuitBreaker(enable=True, rollback=True),
-            security_groups=([self.security_group]),
+            security_groups=self.security_groups,
             service_connect_configuration=ecs.ServiceConnectProps(
                 log_driver=ecs.LogDrivers.aws_logs(stream_prefix=f"{construct_id}"),
                 services=[
