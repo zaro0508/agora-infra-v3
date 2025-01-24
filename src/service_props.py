@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional, Sequence
 
-from aws_cdk import aws_ecs as ecs, aws_ec2 as ec2
+from aws_cdk import aws_ecs as ecs
 
 CONTAINER_LOCATION_PATH_ID = "path://"
 
@@ -62,7 +62,6 @@ class ServiceProps:
     auto_scale_max_capacity: the fargate auto scaling maximum capacity
     container_command: Optional commands to run during the container startup
     container_healthcheck: Optional health check configuration for the container
-    container_security_groups: Optional List of security groups for the container
     """
 
     def __init__(
@@ -78,7 +77,6 @@ class ServiceProps:
         auto_scale_max_capacity: int = 1,
         container_command: Optional[Sequence[str]] = None,
         container_healthcheck: Optional[ecs.HealthCheck] = None,
-        container_security_groups: Optional[List[ec2.SecurityGroup]] = None,
     ) -> None:
         self.container_name = container_name
         self.container_port = container_port
@@ -108,8 +106,3 @@ class ServiceProps:
         self.auto_scale_max_capacity = auto_scale_max_capacity
         self.container_command = container_command
         self.container_healthcheck = container_healthcheck
-
-        if container_security_groups is None:
-            self.container_security_groups = []
-        else:
-            self.container_security_groups = container_security_groups

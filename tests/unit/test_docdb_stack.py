@@ -9,6 +9,7 @@ from src.docdb_props import DocdbProps
 def test_docdb_created():
     cdk_app = cdk.App()
     master_username = "myuser"
+    port = 27017
     vpc_cidr = "10.254.192.0/24"
     network_stack = NetworkStack(cdk_app, "NetworkStack", vpc_cidr=vpc_cidr)
 
@@ -17,6 +18,7 @@ def test_docdb_created():
             ec2.InstanceClass.MEMORY5, ec2.InstanceSize.LARGE
         ),
         master_username=master_username,
+        port=port,
     )
     docdb_stack = DocdbStack(
         scope=cdk_app,
@@ -49,14 +51,13 @@ def test_docdb_created():
             "DBClusterParameterGroupName": assertions.Match.any_value(),
             "StorageEncrypted": True,
             "PreferredMaintenanceWindow": "sat:06:54-sat:07:24",
-            "Port": 27017,
+            "Port": port,
             "EnableCloudwatchLogsExports": ["profiler"],
             "VpcSecurityGroupIds": [
-                assertions.Match.any_value(),
                 assertions.Match.any_value(),
             ],
         },
     )
     template.resource_properties_count_is(
-        "AWS::EC2::SecurityGroup", assertions.Match.any_value(), 2
+        "AWS::EC2::SecurityGroup", assertions.Match.any_value(), 1
     )

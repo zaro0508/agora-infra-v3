@@ -47,6 +47,7 @@ fully_qualified_domain_name = environment_variables["FQDN"]
 environment_tags = environment_variables["TAGS"]
 agora_version = "4.0.0-rc1"
 docdb_master_username = "master"
+mongodb_port = 27017
 
 # Define stacks
 cdk_app = cdk.App()
@@ -67,6 +68,7 @@ docdb_props = DocdbProps(
         ec2.InstanceClass.MEMORY5, ec2.InstanceSize.LARGE
     ),
     master_username=docdb_master_username,
+    port=mongodb_port,
 )
 docdb_stack = DocdbStack(
     scope=cdk_app,
@@ -99,7 +101,7 @@ api_props = ServiceProps(
     container_memory=1024,
     container_env_vars={
         "NODE_ENV": "development",
-        "MONGODB_PORT": "27017",
+        "MONGODB_PORT": f"{mongodb_port}",
         "MONGODB_NAME": "agora",
         "MONDODB_USER": docdb_master_username,
         "MONGODB_HOST": docdb_stack.cluster.cluster_endpoint.hostname,
@@ -110,7 +112,6 @@ api_props = ServiceProps(
             environment_key="MONGODB_PASS",
         )
     ],
-    container_security_groups=[docdb_stack.access_docdb_security_group],
 )
 api_stack = ServiceStack(
     scope=cdk_app,
@@ -120,6 +121,10 @@ api_stack = ServiceStack(
     props=api_props,
 )
 api_stack.add_dependency(docdb_stack)
+api_stack.service.connections.allow_to_default_port(
+    docdb_stack.cluster,
+    "Allow API container to connect to DocumentDB cluster",
+)
 
 app_props = ServiceProps(
     container_name="agora-app",

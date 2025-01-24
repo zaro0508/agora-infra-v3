@@ -8,8 +8,6 @@ from src.docdb_props import DocdbProps
 
 from constructs import Construct
 
-MONGODB_PORT = 27017
-
 
 class DocdbStack(cdk.Stack):
     """
@@ -32,26 +30,6 @@ class DocdbStack(cdk.Stack):
             generate_secret_string=sm.SecretStringGenerator(
                 password_length=32, exclude_punctuation=True
             ),
-        )
-
-        self.access_docdb_security_group = ec2.SecurityGroup(
-            self,
-            "DocDbAccessSecurityGroup",
-            vpc=vpc,
-            description="Instances with access to document DB servers",
-        )
-        self.docdb_security_group = ec2.SecurityGroup(
-            self,
-            "DocDbSecurityGroup",
-            vpc=vpc,
-            description="Document DB server management and access ports",
-        )
-        self.docdb_security_group.add_ingress_rule(
-            peer=self.access_docdb_security_group,
-            connection=ec2.Port.tcp_range(MONGODB_PORT, 27030),
-        )
-        self.docdb_security_group.add_ingress_rule(
-            peer=self.access_docdb_security_group, connection=ec2.Port.tcp(28017)
         )
 
         cluster_parameter_group = docdb.ClusterParameterGroup(
@@ -86,9 +64,6 @@ class DocdbStack(cdk.Stack):
             removal_policy=cdk.RemovalPolicy.DESTROY,
             storage_encrypted=True,
             preferred_maintenance_window="sat:06:54-sat:07:24",
-            port=MONGODB_PORT,
+            port=props.port,
             export_profiler_logs_to_cloud_watch=True,
-            security_group=self.docdb_security_group,
         )
-
-        self.cluster.add_security_groups(self.access_docdb_security_group)
