@@ -8,6 +8,8 @@ from src.docdb_props import DocdbProps
 
 from constructs import Construct
 
+MONGODB_PORT = 27017
+
 
 class DocdbStack(cdk.Stack):
     """
@@ -26,7 +28,7 @@ class DocdbStack(cdk.Stack):
 
         self.master_password_secret = sm.Secret(
             self,
-            f"{construct_id}-master-password",
+            "DocDbMasterPassword",
             generate_secret_string=sm.SecretStringGenerator(
                 password_length=32, exclude_punctuation=True
             ),
@@ -34,19 +36,19 @@ class DocdbStack(cdk.Stack):
 
         self.access_docdb_security_group = ec2.SecurityGroup(
             self,
-            f"{construct_id}-access-docdb-sg",
+            "DocDbAccessSecurityGroup",
             vpc=vpc,
             description="Instances with access to document DB servers",
         )
         self.docdb_security_group = ec2.SecurityGroup(
             self,
-            f"{construct_id}-docdb-sg",
+            "DocDbSecurityGroup",
             vpc=vpc,
             description="Document DB server management and access ports",
         )
         self.docdb_security_group.add_ingress_rule(
             peer=self.access_docdb_security_group,
-            connection=ec2.Port.tcp_range(27017, 27030),
+            connection=ec2.Port.tcp_range(MONGODB_PORT, 27030),
         )
         self.docdb_security_group.add_ingress_rule(
             peer=self.access_docdb_security_group, connection=ec2.Port.tcp(28017)
@@ -54,10 +56,9 @@ class DocdbStack(cdk.Stack):
 
         cluster_parameter_group = docdb.ClusterParameterGroup(
             self,
-            "ClusterParameterGroup",
+            "DocDbClusterParameterGroup",
             family="docdb5.0",
             parameters={
-                "audit_logs": "disabled",
                 "audit_logs": "disabled",
                 "profiler": "enabled",
                 "profiler_sampling_rate": "1.0",
@@ -66,13 +67,12 @@ class DocdbStack(cdk.Stack):
                 "tls": "disabled",
                 "ttl_monitor": "disabled",
             },
-            db_cluster_parameter_group_name=f"{construct_id}-cluster-parameter-group",
         )
 
         # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_docdb/DatabaseCluster.html
         self.cluster = docdb.DatabaseCluster(
             self,
-            "Database",
+            "DocDbCluster",
             master_user=docdb.Login(
                 username=props.master_username,
                 password=self.master_password_secret.secret_value,
@@ -86,7 +86,7 @@ class DocdbStack(cdk.Stack):
             removal_policy=cdk.RemovalPolicy.DESTROY,
             storage_encrypted=True,
             preferred_maintenance_window="sat:06:54-sat:07:24",
-            port=27017,
+            port=MONGODB_PORT,
             export_profiler_logs_to_cloud_watch=True,
             security_group=self.docdb_security_group,
         )
