@@ -10,6 +10,8 @@ from src.service_props import ServiceProps, ServiceSecret
 from src.service_stack import LoadBalancedServiceStack, ServiceStack
 from src.docdb_props import DocdbProps
 from src.docdb_stack import DocdbStack
+from src.bastion_props import BastionProps
+from src.bastion_stack import BastionStack
 
 # get the environment and set environment specific variables
 VALID_ENVIRONMENTS = ["dev", "stage", "prod"]
@@ -48,6 +50,7 @@ environment_tags = environment_variables["TAGS"]
 agora_version = "4.0.0-rc1"
 docdb_master_username = "master"
 mongodb_port = 27017
+vpn_cidr = "10.1.0.0/16"
 
 # Define stacks
 cdk_app = cdk.App()
@@ -75,6 +78,9 @@ docdb_stack = DocdbStack(
     construct_id=f"{stack_name_prefix}-docdb",
     vpc=network_stack.vpc,
     props=docdb_props,
+)
+docdb_stack.cluster.connections.allow_from(
+    ec2.Peer.ipv4(vpn_cidr), ec2.Port.all_traffic(), "Allow all VPN traffic"
 )
 
 ecs_stack = EcsStack(
@@ -174,5 +180,24 @@ apex_stack = LoadBalancedServiceStack(
 )
 apex_stack.add_dependency(app_stack)
 apex_stack.add_dependency(api_stack)
+
+bastion_props = BastionProps(
+    key_name="agora-ci",
+    instance_type=ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
+    ami_id="ami-074a6fac5773fe883",
+    ami_region="us-east-1",
+)
+bastion_stack = BastionStack(
+    scope=cdk_app,
+    construct_id=f"{stack_name_prefix}-bastion",
+    vpc=network_stack.vpc,
+    props=bastion_props,
+)
+bastion_stack.instance.connections.allow_to(
+    docdb_stack.cluster,
+    ec2.Port.tcp_range(mongodb_port, 27030),
+    "Allow bastion host to connect to DocumentDB cluster",
+)
+bastion_stack.add_dependency(docdb_stack)
 
 cdk_app.synth()
