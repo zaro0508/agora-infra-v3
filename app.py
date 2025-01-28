@@ -1,12 +1,15 @@
 from os import environ
 
 import aws_cdk as cdk
+from aws_cdk import aws_ec2 as ec2
 
 from src.ecs_stack import EcsStack
 from src.load_balancer_stack import LoadBalancerStack
 from src.network_stack import NetworkStack
-from src.service_props import ServiceProps, ContainerVolume
+from src.service_props import ServiceProps, ServiceSecret
 from src.service_stack import LoadBalancedServiceStack, ServiceStack
+from src.docdb_props import DocdbProps
+from src.docdb_stack import DocdbStack
 
 # get the environment and set environment specific variables
 VALID_ENVIRONMENTS = ["dev", "stage", "prod"]
@@ -17,21 +20,21 @@ match environment:
             "VPC_CIDR": "10.254.174.0/24",
             "FQDN": "prod.agora.io",
             "CERTIFICATE_ARN": "arn:aws:acm:us-east-1:681175625864:certificate/69b3ba97-b382-4648-8f94-a250b77b4994",
-            "TAGS": {"CostCenter": "NO PROGRAM / 000000"},
+            "TAGS": {"CostCenter": "Agora / 112300"},
         }
     case "stage":
         environment_variables = {
             "VPC_CIDR": "10.254.173.0/24",
             "FQDN": "stage.agora.io",
             "CERTIFICATE_ARN": "arn:aws:acm:us-east-1:681175625864:certificate/69b3ba97-b382-4648-8f94-a250b77b4994",
-            "TAGS": {"CostCenter": "NO PROGRAM / 000000"},
+            "TAGS": {"CostCenter": "Agora / 112300"},
         }
     case "dev":
         environment_variables = {
             "VPC_CIDR": "10.254.172.0/24",
             "FQDN": "dev.agora.io",
             "CERTIFICATE_ARN": "arn:aws:acm:us-east-1:607346494281:certificate/e8093404-7db1-4042-90d0-01eb5bde1ffc",
-            "TAGS": {"CostCenter": "NO PROGRAM / 000000"},
+            "TAGS": {"CostCenter": "Agora / 112300"},
         }
     case _:
         valid_envs_str = ",".join(VALID_ENVIRONMENTS)
@@ -42,7 +45,9 @@ match environment:
 stack_name_prefix = f"agora-{environment}"
 fully_qualified_domain_name = environment_variables["FQDN"]
 environment_tags = environment_variables["TAGS"]
-agora_version = "edge"
+agora_version = "4.0.0-rc1"
+docdb_master_username = "master"
+mongodb_port = 27017
 
 # Define stacks
 cdk_app = cdk.App()
@@ -56,6 +61,20 @@ network_stack = NetworkStack(
     scope=cdk_app,
     construct_id=f"{stack_name_prefix}-network",
     vpc_cidr=environment_variables["VPC_CIDR"],
+)
+
+docdb_props = DocdbProps(
+    instance_type=ec2.InstanceType.of(
+        ec2.InstanceClass.MEMORY5, ec2.InstanceSize.LARGE
+    ),
+    master_username=docdb_master_username,
+    port=mongodb_port,
+)
+docdb_stack = DocdbStack(
+    scope=cdk_app,
+    construct_id=f"{stack_name_prefix}-docdb",
+    vpc=network_stack.vpc,
+    props=docdb_props,
 )
 
 ecs_stack = EcsStack(
@@ -75,82 +94,24 @@ load_balancer_stack = LoadBalancerStack(
     vpc=network_stack.vpc,
 )
 
-api_docs_props = ServiceProps(
-    container_name="agora-api-docs",
-    container_location=f"ghcr.io/sage-bionetworks/agora-api-docs:{agora_version}",
-    container_port=8010,
-    container_memory=200,
-    container_env_vars={"PORT": "8010"},
-)
-api_docs_stack = ServiceStack(
-    scope=cdk_app,
-    construct_id=f"{stack_name_prefix}-api-docs",
-    vpc=network_stack.vpc,
-    cluster=ecs_stack.cluster,
-    props=api_docs_props,
-)
-
-mongo_props = ServiceProps(
-    container_name="agora-mongo",
-    container_location=f"ghcr.io/sage-bionetworks/agora-mongo:{agora_version}",
-    container_port=27017,
-    container_memory=500,
-    container_env_vars={
-        "MONGO_INITDB_ROOT_USERNAME": "root",
-        "MONGO_INITDB_ROOT_PASSWORD": "changeme",
-        "MONGO_INITDB_DATABASE": "agora",
-    },
-    container_volumes=[
-        ContainerVolume(
-            path="/data/db",
-            size=30,
-        )
-    ],
-)
-mongo_stack = ServiceStack(
-    scope=cdk_app,
-    construct_id=f"{stack_name_prefix}-mongo",
-    vpc=network_stack.vpc,
-    cluster=ecs_stack.cluster,
-    props=mongo_props,
-)
-
-# It is probably not appropriate host this container in ECS
-# data_props = ServiceProps(
-#     container_name="agora-data",
-#     container_location=f"ghcr.io/sage-bionetworks/agora-data:{agora_version}",
-#     container_port=9999,  # Not used
-#     container_memory=2048,
-# )
-# data_stack = ServiceStack(
-#     scope=cdk_app,
-#     construct_id=f"{stack_name_prefix}-data",
-#     vpc=network_stack.vpc,
-#     cluster=ecs_stack.cluster,
-#     props=data_props,
-#     container_env_vars={
-#         "DB_USER": "root",
-#         "DB_PASS": "changeme",
-#         "DB_NAME": "agora",
-#         "DB_PORT": "27017",
-#         "DB_HOST": "agora-mongo",
-#         "DATA_FILE": "syn13363290",
-#         "DATA_VERSION": "68",
-#         "TEAM_IMAGES_ID": "syn12861877",
-#         "SYNAPSE_AUTH_TOKEN": "agora-service-user-pat-here",
-#     },
-# )
-# data_stack.add_dependency(mongo_stack)
-
 api_props = ServiceProps(
     container_name="agora-api",
     container_location=f"ghcr.io/sage-bionetworks/agora-api:{agora_version}",
     container_port=3333,
     container_memory=1024,
     container_env_vars={
-        "MONGODB_URI": "mongodb://root:changeme@agora-mongo:27017/agora?authSource=admin",
         "NODE_ENV": "development",
+        "MONGODB_PORT": f"{mongodb_port}",
+        "MONGODB_NAME": "agora",
+        "MONDODB_USER": docdb_master_username,
+        "MONGODB_HOST": docdb_stack.cluster.cluster_endpoint.hostname,
     },
+    container_secrets=[
+        ServiceSecret(
+            secret_name=docdb_stack.master_password_secret.secret_name,
+            environment_key="MONGODB_PASS",
+        )
+    ],
 )
 api_stack = ServiceStack(
     scope=cdk_app,
@@ -159,7 +120,11 @@ api_stack = ServiceStack(
     cluster=ecs_stack.cluster,
     props=api_props,
 )
-api_stack.add_dependency(mongo_stack)
+api_stack.add_dependency(docdb_stack)
+api_stack.service.connections.allow_to_default_port(
+    docdb_stack.cluster,
+    "Allow API container to connect to DocumentDB cluster",
+)
 
 app_props = ServiceProps(
     container_name="agora-app",
@@ -171,6 +136,7 @@ app_props = ServiceProps(
         "APP_VERSION": f"{agora_version}",
         "CSR_API_URL": "http://agora-api:3333/api/v1",
         "SSR_API_URL": "http://agora-api:3333/v1",
+        "TAG_NAME": f"agora/v${agora_version}",
     },
 )
 app_stack = ServiceStack(
@@ -207,7 +173,6 @@ apex_stack = LoadBalancedServiceStack(
     health_check_path="/health",
 )
 apex_stack.add_dependency(app_stack)
-apex_stack.add_dependency(api_docs_stack)
 apex_stack.add_dependency(api_stack)
 
 cdk_app.synth()
