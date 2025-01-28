@@ -45,7 +45,7 @@ match environment:
 stack_name_prefix = f"agora-{environment}"
 fully_qualified_domain_name = environment_variables["FQDN"]
 environment_tags = environment_variables["TAGS"]
-agora_version = "4.0.0-rc1"
+agora_version = "4.0.0-rc2"
 docdb_master_username = "master"
 mongodb_port = 27017
 
