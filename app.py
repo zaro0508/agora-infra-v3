@@ -153,8 +153,6 @@ apex_props = ServiceProps(
     container_port=80,
     container_memory=200,
     container_env_vars={
-        "API_DOCS_HOST": "agora-api-docs",
-        "API_DOCS_PORT": "8010",
         "API_HOST": "agora-api",
         "API_PORT": "3333",
         "APP_HOST": "agora-app",
