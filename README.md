@@ -1,7 +1,7 @@
 
 # AWS CDK app
 
-AWS CDK app for deploying Agora v4.
+AWS CDK app for deploying Agora.
 
 # Prerequisites
 
