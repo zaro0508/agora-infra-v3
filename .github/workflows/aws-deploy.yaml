@@ -51,4 +51,3 @@ jobs:
         run: cdk deploy --all --concurrency 5 --require-approval never
         env:
           ENV: ${{ inputs.environment }}
-          REGION: ${{ inputs.aws-region }}

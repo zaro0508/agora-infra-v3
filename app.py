@@ -13,14 +13,10 @@ from src.docdb_stack import DocdbStack
 from src.bastion_props import BastionProps
 from src.bastion_stack import BastionStack
 
-# get the region, or use a default
-region = environ.get("REGION")
-if region is None:
-    region = "us-east-1"
-
 # get the environment and set environment specific variables
 VALID_ENVIRONMENTS = ["dev", "stage", "prod"]
 environment = environ.get("ENV")
+region = environ.get("AWS_REGION")
 match environment:
     case "prod":
         environment_variables = {
