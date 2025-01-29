@@ -13,13 +13,14 @@ from src.docdb_stack import DocdbStack
 from src.bastion_props import BastionProps
 from src.bastion_stack import BastionStack
 
-# Define stacks
-cdk_app = cdk.App()
+# get the region, or use a default
+region = environ.get("REGION")
+if region is None:
+    region = "us-east-1"
 
 # get the environment and set environment specific variables
 VALID_ENVIRONMENTS = ["dev", "stage", "prod"]
 environment = environ.get("ENV")
-region = cdk_app.region
 match environment:
     case "prod":
         environment_variables = {
@@ -55,6 +56,9 @@ agora_version = "4.0.0-rc1"
 docdb_master_username = "master"
 mongodb_port = 27017
 vpn_cidr = "10.1.0.0/16"
+
+# Define stacks
+cdk_app = cdk.App()
 
 # recursively apply tags to all stack resources
 if environment_tags:
