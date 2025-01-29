@@ -10,30 +10,36 @@ from src.service_props import ServiceProps, ServiceSecret
 from src.service_stack import LoadBalancedServiceStack, ServiceStack
 from src.docdb_props import DocdbProps
 from src.docdb_stack import DocdbStack
+from src.bastion_props import BastionProps
+from src.bastion_stack import BastionStack
+
+# Define stacks
+cdk_app = cdk.App()
 
 # get the environment and set environment specific variables
 VALID_ENVIRONMENTS = ["dev", "stage", "prod"]
 environment = environ.get("ENV")
+region = cdk_app.region
 match environment:
     case "prod":
         environment_variables = {
             "VPC_CIDR": "10.254.174.0/24",
             "FQDN": "prod.agora.io",
-            "CERTIFICATE_ARN": "arn:aws:acm:us-east-1:681175625864:certificate/69b3ba97-b382-4648-8f94-a250b77b4994",
+            "CERTIFICATE_ARN": f"arn:aws:acm:{region}:681175625864:certificate/69b3ba97-b382-4648-8f94-a250b77b4994",
             "TAGS": {"CostCenter": "Agora / 112300"},
         }
     case "stage":
         environment_variables = {
             "VPC_CIDR": "10.254.173.0/24",
             "FQDN": "stage.agora.io",
-            "CERTIFICATE_ARN": "arn:aws:acm:us-east-1:681175625864:certificate/69b3ba97-b382-4648-8f94-a250b77b4994",
+            "CERTIFICATE_ARN": f"arn:aws:acm:{region}:681175625864:certificate/69b3ba97-b382-4648-8f94-a250b77b4994",
             "TAGS": {"CostCenter": "Agora / 112300"},
         }
     case "dev":
         environment_variables = {
             "VPC_CIDR": "10.254.172.0/24",
             "FQDN": "dev.agora.io",
-            "CERTIFICATE_ARN": "arn:aws:acm:us-east-1:607346494281:certificate/e8093404-7db1-4042-90d0-01eb5bde1ffc",
+            "CERTIFICATE_ARN": f"arn:aws:acm:{region}:607346494281:certificate/e8093404-7db1-4042-90d0-01eb5bde1ffc",
             "TAGS": {"CostCenter": "Agora / 112300"},
         }
     case _:
@@ -48,9 +54,7 @@ environment_tags = environment_variables["TAGS"]
 agora_version = "4.0.0-rc1"
 docdb_master_username = "master"
 mongodb_port = 27017
-
-# Define stacks
-cdk_app = cdk.App()
+vpn_cidr = "10.1.0.0/16"
 
 # recursively apply tags to all stack resources
 if environment_tags:
@@ -75,6 +79,9 @@ docdb_stack = DocdbStack(
     construct_id=f"{stack_name_prefix}-docdb",
     vpc=network_stack.vpc,
     props=docdb_props,
+)
+docdb_stack.cluster.connections.allow_from(
+    ec2.Peer.ipv4(vpn_cidr), ec2.Port.all_traffic(), "Allow all VPN traffic"
 )
 
 ecs_stack = EcsStack(
@@ -174,5 +181,24 @@ apex_stack = LoadBalancedServiceStack(
 )
 apex_stack.add_dependency(app_stack)
 apex_stack.add_dependency(api_stack)
+
+bastion_props = BastionProps(
+    key_name="agora-ci",
+    instance_type=ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
+    ami_id="ami-074a6fac5773fe883",
+    ami_region=region,
+)
+bastion_stack = BastionStack(
+    scope=cdk_app,
+    construct_id=f"{stack_name_prefix}-bastion",
+    vpc=network_stack.vpc,
+    props=bastion_props,
+)
+bastion_stack.instance.connections.allow_to(
+    docdb_stack.cluster,
+    ec2.Port.tcp_range(mongodb_port, 27030),
+    "Allow bastion host to connect to DocumentDB cluster",
+)
+bastion_stack.add_dependency(docdb_stack)
 
 cdk_app.synth()
