@@ -51,7 +51,7 @@ match environment:
 stack_name_prefix = f"agora-{environment}"
 fully_qualified_domain_name = environment_variables["FQDN"]
 environment_tags = environment_variables["TAGS"]
-agora_version = "4.0.0-rc1"
+agora_version = "4.0.0-rc2"
 docdb_master_username = "master"
 mongodb_port = 27017
 vpn_cidr = "10.1.0.0/16"
@@ -139,9 +139,8 @@ app_props = ServiceProps(
     container_port=4200,
     container_memory=200,
     container_env_vars={
-        "API_DOCS_URL": f"http://{fully_qualified_domain_name}/api-docs",
         "APP_VERSION": f"{agora_version}",
-        "CSR_API_URL": f"http://{fully_qualified_domain_name}/api/v1",
+        "CSR_API_URL": "http://agora-api:3333/api/v1",
         "SSR_API_URL": "http://agora-api:3333/v1",
         "TAG_NAME": f"agora/v${agora_version}",
     },
@@ -161,8 +160,6 @@ apex_props = ServiceProps(
     container_port=80,
     container_memory=200,
     container_env_vars={
-        "API_DOCS_HOST": "agora-api-docs",
-        "API_DOCS_PORT": "8010",
         "API_HOST": "agora-api",
         "API_PORT": "3333",
         "APP_HOST": "agora-app",
