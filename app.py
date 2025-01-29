@@ -16,12 +16,14 @@ from src.bastion_stack import BastionStack
 # get the environment and set environment specific variables
 VALID_ENVIRONMENTS = ["dev", "stage", "prod"]
 environment = environ.get("ENV")
+account = environ.get("CDK_DEPLOY_ACCOUNT") or environ.get(
+    "CDK_DEFAULT_ACCOUNT", "012345678901"
+)
 match environment:
     case "prod":
         environment_variables = {
             "VPC_CIDR": "10.254.174.0/24",
             "FQDN": "prod.agora.io",
-            "CERTIFICATE_ACCOUNT_ID": "681175625864",
             "CERTIFICATE_RESOURCE_ID": "69b3ba97-b382-4648-8f94-a250b77b4994",
             "TAGS": {"CostCenter": "Agora / 112300"},
         }
@@ -29,7 +31,6 @@ match environment:
         environment_variables = {
             "VPC_CIDR": "10.254.173.0/24",
             "FQDN": "stage.agora.io",
-            "CERTIFICATE_ACCOUNT_ID": "681175625864",
             "CERTIFICATE_RESOURCE_ID": "69b3ba97-b382-4648-8f94-a250b77b4994",
             "TAGS": {"CostCenter": "Agora / 112300"},
         }
@@ -37,7 +38,6 @@ match environment:
         environment_variables = {
             "VPC_CIDR": "10.254.172.0/24",
             "FQDN": "dev.agora.io",
-            "CERTIFICATE_ACCOUNT_ID": "607346494281",
             "CERTIFICATE_RESOURCE_ID": "e8093404-7db1-4042-90d0-01eb5bde1ffc",
             "TAGS": {"CostCenter": "Agora / 112300"},
         }
@@ -178,7 +178,7 @@ apex_stack = LoadBalancedServiceStack(
     cluster=ecs_stack.cluster,
     props=apex_props,
     load_balancer=load_balancer_stack.alb,
-    certificate_account_id=environment_variables["CERTIFICATE_ACCOUNT_ID"],
+    certificate_account_id=account,
     certificate_resource_id=environment_variables["CERTIFICATE_RESOURCE_ID"],
     health_check_path="/health",
 )
