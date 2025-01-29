@@ -53,6 +53,7 @@ class BastionStack(cdk.Stack):
             key_pair=key_pair,
             propagate_tags_to_volume_on_creation=True,
             instance_profile=instance_profile,
+            block_devices=props.block_devices,
         )
 
         cdk.Tags.of(self.instance).add("ManagedInstanceMaintenanceTarget", "yes")
