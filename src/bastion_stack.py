@@ -33,8 +33,8 @@ class BastionStack(cdk.Stack):
                 )
             ],
         )
-        instance_profile = iam.CfnInstanceProfile(
-            self, "BastionInstanceProfile", roles=[role.role_name]
+        instance_profile = iam.InstanceProfile(
+            self, "BastionInstanceProfile", role=role
         )
 
         key_pair = ec2.KeyPair.from_key_pair_name(
