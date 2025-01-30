@@ -109,7 +109,7 @@ api_props = ServiceProps(
         "NODE_ENV": "development",
         "MONGODB_PORT": f"{mongodb_port}",
         "MONGODB_NAME": "agora",
-        "MONDODB_USER": docdb_master_username,
+        "MONGODB_USER": docdb_master_username,
         "MONGODB_HOST": docdb_stack.cluster.cluster_endpoint.hostname,
     },
     container_secrets=[
