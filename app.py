@@ -182,6 +182,7 @@ bastion_props = BastionProps(
     key_name="agora-ci",
     instance_type=ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
     ami_id="ami-074a6fac5773fe883",
+    ami_region="us-east-1",
 )
 bastion_stack = BastionStack(
     scope=cdk_app,

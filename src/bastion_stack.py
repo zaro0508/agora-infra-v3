@@ -41,15 +41,13 @@ class BastionStack(cdk.Stack):
             self, "BastionKeyPair", props.key_name
         )
 
-        region_json = cdk.CfnJson(self, "AmiRegionJson", value=self.region)
-
         # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_ec2/Instance.html
         self.instance = ec2.Instance(
             self,
             "BastionHost",
             instance_type=props.instance_type,
             machine_image=ec2.MachineImage.generic_linux(
-                {region_json.to_string(): props.ami_id}
+                {props.ami_region: props.ami_id}
             ),
             vpc=vpc,
             key_pair=key_pair,
