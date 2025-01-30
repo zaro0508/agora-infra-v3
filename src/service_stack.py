@@ -217,7 +217,6 @@ class LoadBalancedServiceStack(ServiceStack):
         cluster: ecs.Cluster,
         props: ServiceProps,
         load_balancer: elbv2.ApplicationLoadBalancer,
-        certificate_account_id: str,
         certificate_resource_id: str,
         health_check_path: str = "/",
         health_check_interval: int = 1,  # max is 5
@@ -228,7 +227,7 @@ class LoadBalancedServiceStack(ServiceStack):
         # -------------------
         # ACM Certificate for HTTPS
         # -------------------
-        certificate_arn = f"arn:aws:acm:${self.region}:${certificate_account_id}:certificate/${certificate_resource_id}"
+        certificate_arn = f"arn:aws:acm:{self.region}:{self.account}:certificate/{certificate_resource_id}"
         self.cert = acm.Certificate.from_certificate_arn(
             self, "Cert", certificate_arn=certificate_arn
         )

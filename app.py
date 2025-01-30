@@ -16,9 +16,6 @@ from src.bastion_stack import BastionStack
 # get the environment and set environment specific variables
 VALID_ENVIRONMENTS = ["dev", "stage", "prod"]
 environment = environ.get("ENV")
-account = environ.get("CDK_DEPLOY_ACCOUNT") or environ.get(
-    "CDK_DEFAULT_ACCOUNT", "012345678901"
-)
 match environment:
     case "prod":
         environment_variables = {
@@ -178,7 +175,6 @@ apex_stack = LoadBalancedServiceStack(
     cluster=ecs_stack.cluster,
     props=apex_props,
     load_balancer=load_balancer_stack.alb,
-    certificate_account_id=account,
     certificate_resource_id=environment_variables["CERTIFICATE_RESOURCE_ID"],
     health_check_path="/health",
 )
