@@ -20,21 +20,21 @@ match environment:
     case "prod":
         environment_variables = {
             "VPC_CIDR": "10.254.174.0/24",
-            "FQDN": "prod.agora.io",
+            "FQDN": "newagora-prod.adknowledgeportal.org",
             "CERTIFICATE_ID": "69b3ba97-b382-4648-8f94-a250b77b4994",
             "TAGS": {"CostCenter": "Agora / 112300"},
         }
     case "stage":
         environment_variables = {
             "VPC_CIDR": "10.254.173.0/24",
-            "FQDN": "stage.agora.io",
+            "FQDN": "newagora-stage.adknowledgeportal.org",
             "CERTIFICATE_ID": "69b3ba97-b382-4648-8f94-a250b77b4994",
             "TAGS": {"CostCenter": "Agora / 112300"},
         }
     case "dev":
         environment_variables = {
             "VPC_CIDR": "10.254.172.0/24",
-            "FQDN": "dev.agora.io",
+            "FQDN": "newagora-dev.adknowledgeportal.org",
             "CERTIFICATE_ID": "e8093404-7db1-4042-90d0-01eb5bde1ffc",
             "TAGS": {"CostCenter": "Agora / 112300"},
         }
