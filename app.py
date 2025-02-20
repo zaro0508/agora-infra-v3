@@ -4,6 +4,7 @@ import aws_cdk as cdk
 from aws_cdk import aws_ec2 as ec2
 
 from src.ecs_stack import EcsStack
+from src.helpers.get_package_version import get_alternate_tag_for_edge_package_version
 from src.load_balancer_stack import LoadBalancerStack
 from src.network_stack import NetworkStack
 from src.service_props import ServiceProps, ServiceSecret
@@ -47,10 +48,28 @@ match environment:
 stack_name_prefix = f"agora-{environment}"
 fully_qualified_domain_name = environment_variables["FQDN"]
 environment_tags = environment_variables["TAGS"]
-agora_version = "4.0.0-rc2"
+agora_version = "edge"
 docdb_master_username = "master"
 mongodb_port = 27017
 vpn_cidr = "10.1.0.0/16"
+
+# Get image versions
+if agora_version == "edge":
+    app_version = get_alternate_tag_for_edge_package_version(
+        "Sage-Bionetworks", "agora-app"
+    )
+    api_version = get_alternate_tag_for_edge_package_version(
+        "Sage-Bionetworks", "agora-api"
+    )
+    apex_version = get_alternate_tag_for_edge_package_version(
+        "Sage-Bionetworks", "agora-apex"
+    )
+else:
+    app_version = api_version = apex_version = agora_version
+
+print(
+    f"Using images: agora-app:{app_version}, agora-api:{api_version}, agora-apex:{apex_version}"
+)
 
 # Define stacks
 cdk_app = cdk.App()
@@ -102,7 +121,7 @@ load_balancer_stack = LoadBalancerStack(
 
 api_props = ServiceProps(
     container_name="agora-api",
-    container_location=f"ghcr.io/sage-bionetworks/agora-api:{agora_version}",
+    container_location=f"ghcr.io/sage-bionetworks/agora-api:{api_version}",
     container_port=3333,
     container_memory=1024,
     container_env_vars={
@@ -134,7 +153,7 @@ api_stack.service.connections.allow_to_default_port(
 
 app_props = ServiceProps(
     container_name="agora-app",
-    container_location=f"ghcr.io/sage-bionetworks/agora-app:{agora_version}",
+    container_location=f"ghcr.io/sage-bionetworks/agora-app:{app_version}",
     container_port=4200,
     container_memory=200,
     container_env_vars={
@@ -155,7 +174,7 @@ app_stack.add_dependency(api_stack)
 
 apex_props = ServiceProps(
     container_name="agora-apex",
-    container_location=f"ghcr.io/sage-bionetworks/agora-apex:{agora_version}",
+    container_location=f"ghcr.io/sage-bionetworks/agora-apex:{apex_version}",
     container_port=80,
     container_memory=200,
     container_env_vars={
