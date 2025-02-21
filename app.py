@@ -157,10 +157,10 @@ app_props = ServiceProps(
     container_port=4200,
     container_memory=200,
     container_env_vars={
-        "APP_VERSION": f"{agora_version}",
+        "APP_VERSION": f"{app_version}",
         "CSR_API_URL": f"https://{fully_qualified_domain_name}/api/v1",
         "SSR_API_URL": "http://agora-api:3333/api/v1",
-        "TAG_NAME": f"agora/v${agora_version}",
+        "TAG_NAME": f"agora/v${app_version}",
     },
 )
 app_stack = ServiceStack(
