@@ -109,7 +109,7 @@ class ServiceStack(cdk.Stack):
         self.container = self.task_definition.add_container(
             props.container_name,
             image=image,
-            memory_limit_mib=props.container_memory,
+            memory_reservation_mib=props.container_memory_reservation,
             environment=props.container_env_vars,
             secrets=secrets,
             port_mappings=[
