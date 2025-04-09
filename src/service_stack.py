@@ -85,7 +85,7 @@ class ServiceStack(cdk.Stack):
             self,
             "TaskDef",
             cpu=2048,
-            memory_limit_mib=8192,
+            memory_limit_mib=4096,
             task_role=task_role,
             execution_role=execution_role,
         )
